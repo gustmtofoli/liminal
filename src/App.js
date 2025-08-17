@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, RotateCcw, Volume2, Timer, Shuffle, Grid, List, Maximize2, SkipBack, SkipForward } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Play, Pause, RotateCcw, Volume2, Timer, Shuffle, Grid, List, SkipBack, SkipForward, Minimize2, Search, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Componente de Card para cada ambiente sonoro (Grid View)
 const SoundCardGrid = ({ sound, isActive, onSelect, isPlaying }) => (
@@ -60,7 +60,10 @@ const SoundCardList = ({ sound, isActive, onSelect, isPlaying }) => (
         <div className={`w-3 h-3 rounded-full ${isPlaying ? 'bg-green-400 animate-pulse' : 'bg-white/60'}`} />
       )}
       <div className="text-white/40 group-hover:text-white/60 transition-colors">
-        <Play className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
+        {isActive && isPlaying ? 
+          <Pause className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" /> : 
+          <Play className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
+        }
       </div>
     </div>
   </div>
@@ -79,7 +82,9 @@ const AudioPlayer = ({
   onPreviousSound,
   onNextSound,
   isFloating = false,
-  onToggleExpansion
+  onToggleExpansion,
+  sounds,
+  onSoundSelect
 }) => {
   const [currentTime, setCurrentTime] = useState(0);
 
@@ -101,37 +106,20 @@ const AudioPlayer = ({
 
   const progressPercentage = (currentTime / duration) * 100;
 
-  // Diferentes visualizações baseadas no ambiente (só para versão expandida)
+  // Diferentes visualizações baseadas no ambiente (desabilitado)
   const getVisualization = () => {
-    if (!currentSound || !isExpanded) return null;
-    
-    const animations = {
-      1: 'animate-pulse', // Chuva
-      2: 'animate-bounce', // Floresta
-      3: 'animate-pulse', // Oceano
-      4: 'animate-ping', // Fogueira
-      5: 'animate-spin', // Vento
-      6: 'animate-pulse', // Frequência
-      7: 'animate-bounce', // Café
-      8: 'animate-ping', // Tempestade
-    };
-
-    return (
-      <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-        <div className={`w-96 h-96 rounded-full bg-gradient-to-r ${currentSound.gradient} opacity-20 ${animations[currentSound.id] || 'animate-pulse'}`} 
-             style={{ animationDuration: '4s' }} />
-        <div className={`absolute w-64 h-64 rounded-full bg-gradient-to-r ${currentSound.gradient} opacity-30 ${animations[currentSound.id] || 'animate-pulse'}`} 
-             style={{ animationDuration: '6s', animationDelay: '1s' }} />
-        <div className={`absolute w-32 h-32 rounded-full bg-gradient-to-r ${currentSound.gradient} opacity-40 ${animations[currentSound.id] || 'animate-pulse'}`} 
-             style={{ animationDuration: '3s', animationDelay: '2s' }} />
-      </div>
-    );
+    return null; // Animações de fundo removidas
   };
 
   // Layout horizontal para player flutuante
   if (isFloating && !isExpanded) {
     return (
-      <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 transition-all duration-500 p-3">
+      <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 transition-all duration-500 p-3 relative">
+        {/* Playing Indicator - Discrete inside top right (Only when playing) */}
+        {isPlaying && currentSound && (
+          <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-green-400 opacity-70 animate-pulse" />
+        )}
+        
         <div className="flex items-center gap-4">
           {/* Sound Info - Clickable */}
           <div 
@@ -191,9 +179,18 @@ const AudioPlayer = ({
   // Layout original para outros casos
   return (
     <div className={`
-      bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 transition-all duration-500
+      bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 transition-all duration-500 relative
       ${isExpanded ? 'p-12 min-h-[500px]' : 'p-4'}
     `}>
+      {/* Playing Indicator - Top Right Corner */}
+      {isPlaying && currentSound && (
+        <div className={`absolute rounded-full bg-green-400 animate-pulse ${
+          isExpanded 
+            ? 'top-4 right-4 w-4 h-4 shadow-lg shadow-green-400/50' 
+            : 'top-2 right-2 w-2 h-2 opacity-70'
+        }`} />
+      )}
+
       {/* Visualization Background - Only for expanded */}
       {isExpanded && currentSound && (
         <div className="absolute inset-0 rounded-2xl overflow-hidden">
@@ -205,16 +202,27 @@ const AudioPlayer = ({
       <div className="relative z-10">
         {/* Header */}
         <div className={`flex items-center gap-4 ${isExpanded ? 'mb-8' : 'mb-4'}`}>
-          <div className={`
-            rounded-xl bg-gradient-to-br flex items-center justify-center text-white font-bold transition-all duration-300
-            ${isExpanded ? 'w-20 h-20 text-4xl' : 'w-12 h-12 text-2xl'}
-            ${currentSound ? currentSound.gradient : 'from-gray-600 to-gray-800'}
-          `}>
+          <div 
+            className={`
+              rounded-xl bg-gradient-to-br flex items-center justify-center text-white font-bold transition-all duration-300
+              ${isExpanded ? 'w-20 h-20 text-4xl' : 'w-12 h-12 text-2xl'}
+              ${currentSound ? currentSound.gradient : 'from-gray-600 to-gray-800'}
+              ${!isExpanded && onToggleExpansion ? 'cursor-pointer group hover:scale-110' : ''}
+            `}
+            onClick={!isExpanded && onToggleExpansion ? onToggleExpansion : undefined}
+          >
             {currentSound?.icon || '🎵'}
           </div>
           
           <div className="flex-1 min-w-0">
-            <h2 className={`text-white font-bold truncate ${isExpanded ? 'text-3xl mb-2' : 'text-lg mb-1'}`}>
+            <h2 
+              className={`
+                text-white font-bold truncate 
+                ${isExpanded ? 'text-3xl mb-2' : 'text-lg mb-1'}
+                ${!isExpanded && onToggleExpansion ? 'cursor-pointer hover:text-blue-300 transition-colors' : ''}
+              `}
+              onClick={!isExpanded && onToggleExpansion ? onToggleExpansion : undefined}
+            >
               {currentSound ? currentSound.name : 'Selecione um ambiente'}
             </h2>
             {(isExpanded || currentSound) && (
@@ -355,6 +363,10 @@ const LiminalApp = () => {
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isLargeScreen, setIsLargeScreen] = useState(false);
   const [playerBottomOffset, setPlayerBottomOffset] = useState(24); // 6 * 4 = 24px (bottom-6)
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+  const carouselRef = useRef(null);
+  const [isSliderActive, setIsSliderActive] = useState(false);
 
   // Controle de scroll para mostrar/esconder header
   useEffect(() => {
@@ -424,6 +436,7 @@ const LiminalApp = () => {
     };
   }, []);
 
+
   // Dados dos ambientes sonoros
   const sounds = [
     {
@@ -484,6 +497,86 @@ const LiminalApp = () => {
     }
   ];
 
+  // Auto-scroll do carrossel para centralizar o player expandido na tela
+  useEffect(() => {
+    if (isPlayerExpanded && currentSound && carouselRef.current) {
+      setTimeout(() => {
+        const container = carouselRef.current;
+        
+        // Encontrar o elemento do player expandido
+        const expandedPlayerElement = container.querySelector(`[data-sound-id="${currentSound.id}"]`);
+        
+        if (expandedPlayerElement) {
+          // Obter posições reais
+          const playerRect = expandedPlayerElement.getBoundingClientRect();
+          
+          // Centro da tela
+          const screenCenter = window.innerWidth / 2;
+          
+          // Centro atual do player na tela
+          const playerCenterInScreen = playerRect.left + (playerRect.width / 2);
+          
+          // Calcular quanto precisa mover
+          const offsetNeeded = screenCenter - playerCenterInScreen;
+          
+          // Aplicar o scroll
+          container.scrollBy({
+            left: -offsetNeeded,
+            behavior: 'smooth'
+          });
+        }
+      }, 200); // Aumentei o delay
+    }
+  }, [currentSound, isPlayerExpanded]);
+
+  // Gerenciar interação com sliders para evitar conflito com scroll do carrossel
+  useEffect(() => {
+    if (!isPlayerExpanded || !carouselRef.current) return;
+
+    const carousel = carouselRef.current;
+    
+    const handleSliderStart = (e) => {
+      // Verificar se o evento veio de um slider
+      const isSlider = e.target.type === 'range' || e.target.classList.contains('slider');
+      
+      if (isSlider) {
+        setIsSliderActive(true);
+      }
+    };
+
+    const handleSliderEnd = () => {
+      // Pequeno delay para garantir que a interação terminou completamente
+      setTimeout(() => {
+        setIsSliderActive(false);
+      }, 100);
+    };
+
+    // Event listeners para mouse
+    carousel.addEventListener('mousedown', handleSliderStart);
+    carousel.addEventListener('mouseup', handleSliderEnd);
+    carousel.addEventListener('mouseleave', handleSliderEnd);
+
+    // Event listeners para touch
+    carousel.addEventListener('touchstart', handleSliderStart, { passive: false });
+    carousel.addEventListener('touchend', handleSliderEnd);
+    carousel.addEventListener('touchcancel', handleSliderEnd);
+
+    return () => {
+      carousel.removeEventListener('mousedown', handleSliderStart);
+      carousel.removeEventListener('mouseup', handleSliderEnd);
+      carousel.removeEventListener('mouseleave', handleSliderEnd);
+      carousel.removeEventListener('touchstart', handleSliderStart);
+      carousel.removeEventListener('touchend', handleSliderEnd);
+      carousel.removeEventListener('touchcancel', handleSliderEnd);
+    };
+  }, [isPlayerExpanded]);
+
+  // Filtrar sons baseado na busca
+  const filteredSounds = sounds.filter(sound => 
+    sound.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    sound.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const handleSoundSelect = (sound) => {
     if (currentSound?.id === sound.id) {
       setIsPlaying(!isPlaying);
@@ -523,6 +616,25 @@ const LiminalApp = () => {
       setShowSounds(false);
     } else {
       setShowSounds(true);
+      // Recalcular posição do player flutuante quando sair do modo expandido
+      setTimeout(() => {
+        const footer = document.querySelector('footer');
+        if (!footer) return;
+
+        const footerRect = footer.getBoundingClientRect();
+        const windowHeight = window.innerHeight;
+        const minBottomOffset = 24; // bottom-6 em pixels
+
+        if (footerRect.top < windowHeight) {
+          // Footer está visível, calcular nova posição
+          const footerVisibleHeight = windowHeight - footerRect.top;
+          const newBottomOffset = Math.max(minBottomOffset, footerVisibleHeight + 24);
+          setPlayerBottomOffset(newBottomOffset);
+        } else {
+          // Footer não está visível, usar posição padrão
+          setPlayerBottomOffset(minBottomOffset);
+        }
+      }, 50); // Small delay to ensure DOM has updated
     }
   };
 
@@ -536,45 +648,94 @@ const LiminalApp = () => {
       `}>
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-xl">L</span>
+            {/* Logo and Title - Hidden when search is active */}
+            {!showSearch && (
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <span className="text-white font-bold text-xl">L</span>
+                </div>
+                <div>
+                  <h1 className="text-white text-2xl font-bold">Liminal</h1>
+                  <p className="text-white/60 text-sm">Seu refúgio sonoro</p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-white text-2xl font-bold">Liminal</h1>
-                <p className="text-white/60 text-sm">Seu refúgio sonoro</p>
+            )}
+
+            {/* Search Input - Full width when active */}
+            {showSearch && !isPlayerExpanded && (
+              <div className="flex-1 mr-4">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-4 w-4 text-white/40" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Buscar ambientes sonoros..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="block w-full pl-10 pr-10 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300"
+                    autoFocus
+                  />
+                  {/* Clear Button */}
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-white/40 hover:text-white/70 transition-colors duration-200"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
             
             {/* View Controls */}
             <div className="flex items-center gap-4">
               {!isPlayerExpanded && (
-                <div className="flex items-center gap-2 bg-white/10 rounded-xl p-1">
+                <>
+                  <div className="flex items-center gap-2 bg-white/10 rounded-xl p-1">
+                    <button
+                      onClick={() => setViewMode('grid')}
+                      className={`p-2 rounded-lg transition-all duration-300 ${
+                        viewMode === 'grid' ? 'bg-white/20 text-white' : 'text-white/60 hover:text-white'
+                      }`}
+                    >
+                      <Grid className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => setViewMode('list')}
+                      className={`p-2 rounded-lg transition-all duration-300 ${
+                        viewMode === 'list' ? 'bg-white/20 text-white' : 'text-white/60 hover:text-white'
+                      }`}
+                    >
+                      <List className="w-5 h-5" />
+                    </button>
+                  </div>
+
                   <button
-                    onClick={() => setViewMode('grid')}
-                    className={`p-2 rounded-lg transition-all duration-300 ${
-                      viewMode === 'grid' ? 'bg-white/20 text-white' : 'text-white/60 hover:text-white'
+                    onClick={() => {
+                      setShowSearch(!showSearch);
+                      if (showSearch) {
+                        setSearchTerm(''); // Clear search when hiding
+                      }
+                    }}
+                    className={`p-2 rounded-xl transition-all duration-300 ${
+                      showSearch ? 'bg-blue-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white'
                     }`}
                   >
-                    <Grid className="w-5 h-5" />
+                    <Search className="w-5 h-5" />
                   </button>
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`p-2 rounded-lg transition-all duration-300 ${
-                      viewMode === 'list' ? 'bg-white/20 text-white' : 'text-white/60 hover:text-white'
-                    }`}
-                  >
-                    <List className="w-5 h-5" />
-                  </button>
-                </div>
+                </>
               )}
 
-              <button
-                onClick={togglePlayerExpansion}
-                className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-300"
-              >
-                <Maximize2 className="w-5 h-5 text-white" />
-              </button>
+              {isPlayerExpanded && (
+                <button
+                  onClick={togglePlayerExpansion}
+                  className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-300"
+                >
+                  <Minimize2 className="w-5 h-5 text-white" />
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -587,7 +748,7 @@ const LiminalApp = () => {
           ${isPlayerExpanded ? 'grid grid-cols-1' : isLargeScreen ? 'grid lg:grid-cols-4 gap-8' : 'w-full'}
         `}>
           
-          {/* Sounds Grid/List */}
+          {/* Sounds Grid/List OR Carousel (when expanded) */}
           {showSounds && !isPlayerExpanded && (
             <div className={`${isLargeScreen ? 'lg:col-span-3' : 'w-full'} ${!isLargeScreen ? 'mb-32' : ''}`}>
               <div className="mb-8 sm:mb-10 lg:mb-12 text-center sm:text-left">
@@ -604,7 +765,7 @@ const LiminalApp = () => {
                   : 'space-y-4 max-w-4xl mx-auto'
                 }
               `}>
-                {sounds.map((sound) => (
+                {filteredSounds.map((sound) => (
                   viewMode === 'grid' ? (
                     <SoundCardGrid
                       key={sound.id}
@@ -627,6 +788,117 @@ const LiminalApp = () => {
             </div>
           )}
 
+          {/* Carousel - When player is expanded */}
+          {isPlayerExpanded && (
+            <div className="mb-8">
+              <div className="relative max-w-6xl mx-auto">
+                <div 
+                  ref={carouselRef}
+                  className={`scrollbar-hide ${isSliderActive ? 'overflow-x-hidden' : 'overflow-x-auto'}`}
+                >
+                  <div 
+                    className="flex gap-6 pb-4"
+                    style={{ 
+                      width: `${sounds.length * 350 + (sounds.length - 1) * 24}px`,
+                      paddingLeft: '50%',
+                      paddingRight: '50%'
+                    }}
+                  >
+                    {sounds.map((sound) => (
+                      <div
+                        key={sound.id}
+                        data-sound-id={sound.id}
+                        className={`flex-shrink-0 transition-all duration-500 ${
+                          currentSound?.id === sound.id ? 'w-[480px]' : 'w-72'
+                        }`}
+                      >
+                        {currentSound?.id === sound.id ? (
+                          // Expanded Player replacing the selected card
+                          <div className="w-full">
+                            <AudioPlayer
+                              currentSound={currentSound}
+                              isPlaying={isPlaying}
+                              onTogglePlay={handleTogglePlay}
+                              volume={volume}
+                              onVolumeChange={setVolume}
+                              duration={duration}
+                              onDurationChange={setDuration}
+                              isExpanded={true}
+                              onPreviousSound={handlePreviousSound}
+                              onNextSound={handleNextSound}
+                              sounds={sounds}
+                              onSoundSelect={handleSoundSelect}
+                            />
+                          </div>
+                        ) : (
+                          // Regular sound card
+                          <div
+                            className="cursor-pointer scale-95 opacity-70 hover:scale-100 hover:opacity-90 transition-all duration-500"
+                            onClick={() => handleSoundSelect(sound)}
+                          >
+                            <div className={`
+                              relative overflow-hidden rounded-2xl bg-gradient-to-br ${sound.gradient} 
+                              aspect-square flex flex-col justify-between p-6
+                              before:absolute before:inset-0 before:bg-gradient-to-t before:from-black/30 before:to-transparent
+                              hover:shadow-xl transition-shadow duration-300
+                            `}>
+                              <div className="relative z-10 flex justify-between items-start">
+                                <div className="text-white/80 text-4xl">
+                                  {sound.icon}
+                                </div>
+                              </div>
+                              
+                              <div className="relative z-10">
+                                <h3 className="text-white font-bold text-xl mb-2 leading-tight">{sound.name}</h3>
+                                <p className="text-white/80 text-sm">
+                                  {sound.description}
+                                </p>
+                              </div>
+
+                              {/* Background pattern */}
+                              <div className="absolute inset-0 opacity-10">
+                                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Navigation arrows */}
+                <button
+                  onClick={() => {
+                    if (carouselRef.current) {
+                      carouselRef.current.scrollBy({
+                        left: -350, // Adjusted for larger expanded player
+                        behavior: 'smooth'
+                      });
+                    }
+                  }}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-all duration-300 z-10"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                
+                <button
+                  onClick={() => {
+                    if (carouselRef.current) {
+                      carouselRef.current.scrollBy({
+                        left: 350, // Adjusted for larger expanded player
+                        behavior: 'smooth'
+                      });
+                    }
+                  }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-all duration-300 z-10"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Integrated Player for Large Screens */}
           {isLargeScreen && !isPlayerExpanded && (
             <div className="lg:col-span-1">
@@ -642,28 +914,14 @@ const LiminalApp = () => {
                   isExpanded={false}
                   onPreviousSound={handlePreviousSound}
                   onNextSound={handleNextSound}
+                  onToggleExpansion={togglePlayerExpansion}
+                  sounds={sounds}
+                  onSoundSelect={handleSoundSelect}
                 />
               </div>
             </div>
           )}
 
-          {/* Expanded Player */}
-          {isPlayerExpanded && (
-            <div className="max-w-4xl mx-auto">
-              <AudioPlayer
-                currentSound={currentSound}
-                isPlaying={isPlaying}
-                onTogglePlay={handleTogglePlay}
-                volume={volume}
-                onVolumeChange={setVolume}
-                duration={duration}
-                onDurationChange={setDuration}
-                isExpanded={isPlayerExpanded}
-                onPreviousSound={handlePreviousSound}
-                onNextSound={handleNextSound}
-              />
-            </div>
-          )}
         </div>
       </main>
 
@@ -687,6 +945,8 @@ const LiminalApp = () => {
               onNextSound={handleNextSound}
               isFloating={true}
               onToggleExpansion={togglePlayerExpansion}
+              sounds={sounds}
+              onSoundSelect={handleSoundSelect}
             />
           </div>
         </div>
@@ -745,6 +1005,29 @@ const LiminalApp = () => {
         .slider::-moz-range-thumb:hover {
           transform: scale(1.1);
           box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
+        }
+
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+
+        /* Melhorar experiência touch para sliders */
+        .slider {
+          touch-action: pan-y;
+        }
+
+        /* Desabilitar scroll horizontal quando slider está ativo */
+        .overflow-x-hidden {
+          touch-action: pan-y;
+        }
+
+        .overflow-x-auto {
+          touch-action: pan-x pan-y;
         }
 
         @keyframes float {
