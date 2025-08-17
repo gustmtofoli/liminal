@@ -6,7 +6,7 @@ const SoundCardGrid = ({ sound, isActive, onSelect, isPlaying }) => (
   <div 
     onClick={() => onSelect(sound)}
     className={`
-      group relative overflow-hidden rounded-2xl cursor-pointer transition-all duration-500 transform hover:scale-105
+      group relative overflow-hidden rounded-2xl cursor-pointer transition-all duration-500 transform hover:scale-[1.02]
       ${isActive ? 'ring-3 ring-blue-400 shadow-2xl shadow-blue-500/25' : 'hover:shadow-xl hover:shadow-black/20'}
       bg-gradient-to-br ${sound.gradient} aspect-square flex flex-col justify-between p-4 sm:p-5 lg:p-6
       before:absolute before:inset-0 before:bg-gradient-to-t before:from-black/30 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-300
@@ -14,7 +14,7 @@ const SoundCardGrid = ({ sound, isActive, onSelect, isPlaying }) => (
     `}
   >
     <div className="relative z-10 flex justify-between items-start">
-      <div className="text-white/60 text-2xl sm:text-3xl lg:text-4xl group-hover:scale-110 transition-transform duration-300">
+      <div className="text-white/60 text-2xl sm:text-3xl lg:text-4xl group-hover:scale-105 transition-transform duration-300">
         {sound.icon}
       </div>
       {isActive && (
@@ -591,10 +591,10 @@ const FullscreenPlayer = ({ currentSound, isPlaying, onTogglePlay, volume, onVol
       </button>
 
       {/* Player Content */}
-      <div className="relative z-10 max-w-2xl mx-auto text-center px-8">
+      <div className="relative z-10 max-w-2xl mx-auto text-center px-8 -mt-16">
         {/* Sound Icon */}
         <div 
-          className={`w-32 h-32 mx-auto mb-8 rounded-full bg-gradient-to-br ${currentSound?.gradient || 'from-purple-600 to-blue-600'} flex items-center justify-center text-6xl shadow-2xl`}
+          className={`w-32 h-32 mx-auto mb-6 rounded-full bg-gradient-to-br ${currentSound?.gradient || 'from-purple-600 to-blue-600'} flex items-center justify-center text-6xl shadow-2xl`}
           style={{
             animation: isPlaying ? 'float 3s ease-in-out infinite' : 'none'
           }}
@@ -603,11 +603,11 @@ const FullscreenPlayer = ({ currentSound, isPlaying, onTogglePlay, volume, onVol
         </div>
 
         {/* Sound Info */}
-        <h1 className="text-white text-4xl font-bold mb-4">{currentSound?.name || 'Ambiente Sonoro'}</h1>
-        <p className="text-white/70 text-xl mb-12">{currentSound?.description || 'Relaxe e aproveite'}</p>
+        <h1 className="text-white text-4xl font-bold mb-3">{currentSound?.name || 'Ambiente Sonoro'}</h1>
+        <p className="text-white/70 text-xl mb-10">{currentSound?.description || 'Relaxe e aproveite'}</p>
 
         {/* Controls */}
-        <div className="flex items-center justify-center gap-6 mb-12">
+        <div className="flex items-center justify-center gap-6 mb-10">
           <button 
             onClick={onPreviousSound}
             className="p-4 rounded-full bg-white/20 hover:bg-white/30 transition-all duration-300 transform hover:scale-110"
@@ -645,6 +645,24 @@ const FullscreenPlayer = ({ currentSound, isPlaying, onTogglePlay, volume, onVol
             className="flex-1 h-2 bg-white/20 rounded-lg appearance-none cursor-pointer slider"
           />
           <span className="text-white/70 text-sm w-12">{volume}%</span>
+        </div>
+      </div>
+
+      {/* Ads Area - Bottom of Fullscreen */}
+      <div className="absolute bottom-6 left-6 right-6 z-10">
+        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 text-center max-w-6xl mx-auto">
+          <div className="text-white/40 text-xs mb-4">PUBLICIDADE</div>
+          <div className="flex justify-center gap-4">
+            <div className="bg-white/10 rounded-lg h-24 w-80 flex items-center justify-center">
+              <span className="text-white/60 text-sm">Banner 728x90</span>
+            </div>
+            <div className="bg-white/10 rounded-lg h-24 w-80 flex items-center justify-center">
+              <span className="text-white/60 text-sm">Banner 728x90</span>
+            </div>
+            <div className="bg-white/10 rounded-lg h-24 w-80 flex items-center justify-center">
+              <span className="text-white/60 text-sm">Banner 728x90</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1064,38 +1082,73 @@ const LiminalApp = () => {
           {showSounds && !isPlayerExpanded && (
             <div className={`${isLargeScreen ? 'lg:col-span-3' : 'w-full'} ${!isLargeScreen ? 'mb-32' : ''}`}>
               <div className="mb-8 sm:mb-10 lg:mb-12 text-center sm:text-left">
-                <h2 className="text-white text-2xl sm:text-3xl lg:text-4xl font-bold mb-3">Ambientes Sonoros</h2>
-                <p className="text-white/70 text-base sm:text-lg lg:text-xl">Encontre o som perfeito para cada momento</p>
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-6">
+                  {/* Title and Description - Hidden on tablets and below */}
+                  <div className="hidden lg:block">
+                    <h2 className="text-white text-2xl sm:text-3xl lg:text-4xl font-bold mb-3">Ambientes Sonoros</h2>
+                    <p className="text-white/70 text-base sm:text-lg lg:text-xl">Encontre o som perfeito para cada momento</p>
+                  </div>
+                  
+                  {/* Ads Area - Horizontal for Small Screens */}
+                  {!isLargeScreen && (
+                    <div className="flex gap-3 flex-shrink-0 mx-auto lg:mx-0">
+                      <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-3 text-center">
+                        <div className="text-white/40 text-xs mb-2">PUBLICIDADE</div>
+                        <div className="bg-white/10 rounded-lg h-20 w-40 flex items-center justify-center">
+                          <span className="text-white/60 text-xs">Banner 250x80</span>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-3 text-center">
+                        <div className="text-white/40 text-xs mb-2">PUBLICIDADE</div>
+                        <div className="bg-white/10 rounded-lg h-20 w-40 flex items-center justify-center">
+                          <span className="text-white/60 text-xs">Banner 250x80</span>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-3 text-center hidden lg:block">
+                        <div className="text-white/40 text-xs mb-2">PUBLICIDADE</div>
+                        <div className="bg-white/10 rounded-lg h-20 w-40 flex items-center justify-center">
+                          <span className="text-white/60 text-xs">Banner 250x80</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <div className={`
-                transition-all duration-500
-                ${viewMode === 'grid' 
-                  ? isLargeScreen 
-                    ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8'
-                    : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 lg:gap-8'
-                  : 'space-y-4 max-w-4xl mx-auto'
-                }
-              `}>
-                {filteredSounds.map((sound) => (
-                  viewMode === 'grid' ? (
-                    <SoundCardGrid
-                      key={sound.id}
-                      sound={sound}
-                      isActive={currentSound?.id === sound.id}
-                      onSelect={handleSoundSelect}
-                      isPlaying={isPlaying && currentSound?.id === sound.id}
-                    />
-                  ) : (
-                    <SoundCardList
-                      key={sound.id}
-                      sound={sound}
-                      isActive={currentSound?.id === sound.id}
-                      onSelect={handleSoundSelect}
-                      isPlaying={isPlaying && currentSound?.id === sound.id}
-                    />
-                  )
-                ))}
+              <div className="overflow-y-auto overflow-x-hidden max-h-[70vh] pr-2 scrollbar-hide pt-2">
+                {viewMode === 'grid' ? (
+                  <div className={`
+                    transition-all duration-500 grid gap-6 lg:gap-8
+                    ${isLargeScreen 
+                      ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
+                      : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'
+                    }
+                  `}>
+                    {filteredSounds.map((sound) => (
+                      <SoundCardGrid
+                        key={sound.id}
+                        sound={sound}
+                        isActive={currentSound?.id === sound.id}
+                        onSelect={handleSoundSelect}
+                        isPlaying={isPlaying && currentSound?.id === sound.id}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-4 max-w-4xl mx-auto">
+                    {filteredSounds.map((sound) => (
+                      <SoundCardList
+                        key={sound.id}
+                        sound={sound}
+                        isActive={currentSound?.id === sound.id}
+                        onSelect={handleSoundSelect}
+                        isPlaying={isPlaying && currentSound?.id === sound.id}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1214,7 +1267,7 @@ const LiminalApp = () => {
           {/* Integrated Player for Large Screens */}
           {isLargeScreen && !isPlayerExpanded && (
             <div className="lg:col-span-1">
-              <div className="sticky top-32">
+              <div className="sticky top-32 space-y-6">
                 <AudioPlayer
                   currentSound={currentSound}
                   isPlaying={isPlaying}
@@ -1230,11 +1283,47 @@ const LiminalApp = () => {
                   sounds={sounds}
                   onSoundSelect={handleSoundSelect}
                 />
+                
+                {/* Ads Area */}
+                <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4 text-center">
+                  <div className="text-white/40 text-xs mb-4">PUBLICIDADE</div>
+                  <div className="space-y-4">
+                    <div className="bg-white/10 rounded-lg h-32 flex items-center justify-center">
+                      <span className="text-white/60 text-sm">Anúncio 300x120</span>
+                    </div>
+                    <div className="bg-white/10 rounded-lg h-48 flex items-center justify-center">
+                      <span className="text-white/60 text-sm">Anúncio 300x180</span>
+                    </div>
+                    <div className="bg-white/10 rounded-lg h-24 flex items-center justify-center">
+                      <span className="text-white/60 text-sm">Banner 300x90</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
 
         </div>
+
+        {/* Ads Area Above Footer - Only when carousel is expanded */}
+        {isPlayerExpanded && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-4 pt-12">
+            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 text-center">
+              <div className="text-white/40 text-xs mb-4">PUBLICIDADE</div>
+              <div className="flex justify-center gap-4">
+                <div className="bg-white/10 rounded-lg h-24 w-80 flex items-center justify-center">
+                  <span className="text-white/60 text-sm">Banner 728x90</span>
+                </div>
+                <div className="bg-white/10 rounded-lg h-24 w-80 flex items-center justify-center">
+                  <span className="text-white/60 text-sm">Banner 728x90</span>
+                </div>
+                <div className="bg-white/10 rounded-lg h-24 w-80 flex items-center justify-center">
+                  <span className="text-white/60 text-sm">Banner 728x90</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* Floating Player - Only for Small Screens */}
