@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, RotateCcw, Volume2, Timer, Shuffle, Grid, List, SkipBack, SkipForward, Minimize2, Search, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Play, Pause, RotateCcw, Volume2, Timer, Shuffle, Grid, List, SkipBack, SkipForward, Search, X, ChevronLeft, ChevronRight, Maximize2, ArrowLeft } from 'lucide-react';
 
 // Componente de Card para cada ambiente sonoro (Grid View)
 const SoundCardGrid = ({ sound, isActive, onSelect, isPlaying }) => (
@@ -350,6 +350,179 @@ const AudioPlayer = ({
   );
 };
 
+// Componente de visualização em tela cheia
+const FullscreenPlayer = ({ currentSound, isPlaying, onTogglePlay, volume, onVolumeChange, duration, onDurationChange, onPreviousSound, onNextSound, onClose }) => {
+  const [particles, setParticles] = useState([]);
+  const [waveform, setWaveform] = useState([]);
+  
+  // Gerar partículas aleatórias
+  useEffect(() => {
+    const generateParticles = () => {
+      return Array.from({ length: 50 }, (_, i) => ({
+        id: i,
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        size: Math.random() * 4 + 1,
+        speedX: (Math.random() - 0.5) * 2,
+        speedY: (Math.random() - 0.5) * 2,
+        color: `hsl(${Math.random() * 360}, 70%, 60%)`,
+        opacity: Math.random() * 0.8 + 0.2
+      }));
+    };
+    
+    setParticles(generateParticles());
+  }, []);
+
+  // Gerar waveform dinâmica
+  useEffect(() => {
+    const generateWaveform = () => {
+      return Array.from({ length: 64 }, () => Math.random() * 100 + 10);
+    };
+    
+    let interval;
+    if (isPlaying) {
+      interval = setInterval(() => {
+        setWaveform(generateWaveform());
+      }, 100);
+    }
+    
+    return () => clearInterval(interval);
+  }, [isPlaying]);
+
+  // Animar partículas
+  useEffect(() => {
+    let animationFrame;
+    
+    const animateParticles = () => {
+      setParticles(prev => prev.map(particle => ({
+        ...particle,
+        x: (particle.x + particle.speedX + window.innerWidth) % window.innerWidth,
+        y: (particle.y + particle.speedY + window.innerHeight) % window.innerHeight,
+        opacity: isPlaying ? Math.sin(Date.now() * 0.001 + particle.id) * 0.3 + 0.5 : 0.2
+      })));
+      
+      animationFrame = requestAnimationFrame(animateParticles);
+    };
+    
+    animateParticles();
+    return () => cancelAnimationFrame(animationFrame);
+  }, [isPlaying]);
+
+  return (
+    <div className="fixed inset-0 bg-black z-[100] flex items-center justify-center">
+      {/* Animated Background */}
+      <div className="absolute inset-0 overflow-hidden">
+        {/* Gradient Background */}
+        <div 
+          className={`absolute inset-0 bg-gradient-to-br ${currentSound?.gradient || 'from-purple-900 to-blue-900'} opacity-30`}
+          style={{
+            animation: isPlaying ? 'gradientShift 10s ease-in-out infinite' : 'none'
+          }}
+        />
+        
+        {/* Floating Particles */}
+        {particles.map(particle => (
+          <div
+            key={particle.id}
+            className="absolute rounded-full"
+            style={{
+              left: `${particle.x}px`,
+              top: `${particle.y}px`,
+              width: `${particle.size}px`,
+              height: `${particle.size}px`,
+              backgroundColor: particle.color,
+              opacity: particle.opacity,
+              filter: 'blur(1px)',
+              transition: 'opacity 0.3s ease'
+            }}
+          />
+        ))}
+        
+        {/* Waveform Visualization */}
+        <div className="absolute bottom-0 left-0 right-0 flex items-end justify-center h-32 opacity-30">
+          {waveform.map((height, index) => (
+            <div
+              key={index}
+              className="bg-white mx-1 rounded-t"
+              style={{
+                height: `${height}%`,
+                width: '8px',
+                animation: isPlaying ? `waveformPulse 0.5s ease-in-out infinite ${index * 0.05}s` : 'none'
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Close Button */}
+      <button
+        onClick={onClose}
+        className="absolute top-6 right-6 z-10 p-3 bg-black/50 hover:bg-black/70 rounded-full transition-all duration-300"
+      >
+        <X className="w-6 h-6 text-white" />
+      </button>
+
+      {/* Player Content */}
+      <div className="relative z-10 max-w-2xl mx-auto text-center px-8">
+        {/* Sound Icon */}
+        <div 
+          className={`w-32 h-32 mx-auto mb-8 rounded-full bg-gradient-to-br ${currentSound?.gradient || 'from-purple-600 to-blue-600'} flex items-center justify-center text-6xl shadow-2xl`}
+          style={{
+            animation: isPlaying ? 'float 3s ease-in-out infinite' : 'none'
+          }}
+        >
+          {currentSound?.icon || '🎵'}
+        </div>
+
+        {/* Sound Info */}
+        <h1 className="text-white text-4xl font-bold mb-4">{currentSound?.name || 'Ambiente Sonoro'}</h1>
+        <p className="text-white/70 text-xl mb-12">{currentSound?.description || 'Relaxe e aproveite'}</p>
+
+        {/* Controls */}
+        <div className="flex items-center justify-center gap-6 mb-12">
+          <button 
+            onClick={onPreviousSound}
+            className="p-4 rounded-full bg-white/20 hover:bg-white/30 transition-all duration-300 transform hover:scale-110"
+          >
+            <SkipBack className="text-white w-8 h-8" />
+          </button>
+
+          <button 
+            onClick={onTogglePlay}
+            className="p-6 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-110 shadow-2xl"
+          >
+            {isPlaying ? 
+              <Pause className="text-white w-12 h-12" /> : 
+              <Play className="text-white ml-1 w-12 h-12" />
+            }
+          </button>
+
+          <button 
+            onClick={onNextSound}
+            className="p-4 rounded-full bg-white/20 hover:bg-white/30 transition-all duration-300 transform hover:scale-110"
+          >
+            <SkipForward className="text-white w-8 h-8" />
+          </button>
+        </div>
+
+        {/* Volume Control */}
+        <div className="flex items-center gap-4 max-w-md mx-auto">
+          <Volume2 className="w-6 h-6 text-white/70" />
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={volume}
+            onChange={(e) => onVolumeChange(e.target.value)}
+            className="flex-1 h-2 bg-white/20 rounded-lg appearance-none cursor-pointer slider"
+          />
+          <span className="text-white/70 text-sm w-12">{volume}%</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Componente principal da aplicação
 const LiminalApp = () => {
   const [currentSound, setCurrentSound] = useState(null);
@@ -367,6 +540,7 @@ const LiminalApp = () => {
   const [showSearch, setShowSearch] = useState(false);
   const carouselRef = useRef(null);
   const [isSliderActive, setIsSliderActive] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Controle de scroll para mostrar/esconder header
   useEffect(() => {
@@ -648,8 +822,8 @@ const LiminalApp = () => {
       `}>
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            {/* Logo and Title - Hidden when search is active */}
-            {!showSearch && (
+            {/* Logo and Title - Hidden when search is active or player expanded */}
+            {!showSearch && !isPlayerExpanded && (
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
                   <span className="text-white font-bold text-xl">L</span>
@@ -659,6 +833,16 @@ const LiminalApp = () => {
                   <p className="text-white/60 text-sm">Seu refúgio sonoro</p>
                 </div>
               </div>
+            )}
+
+            {/* Back Button - When player is expanded */}
+            {isPlayerExpanded && (
+              <button
+                onClick={togglePlayerExpansion}
+                className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-300"
+              >
+                <ArrowLeft className="w-5 h-5 text-white" />
+              </button>
             )}
 
             {/* Search Input - Full width when active */}
@@ -730,10 +914,10 @@ const LiminalApp = () => {
 
               {isPlayerExpanded && (
                 <button
-                  onClick={togglePlayerExpansion}
+                  onClick={() => setIsFullscreen(true)}
                   className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-300"
                 >
-                  <Minimize2 className="w-5 h-5 text-white" />
+                  <Maximize2 className="w-5 h-5 text-white" />
                 </button>
               )}
             </div>
@@ -952,6 +1136,22 @@ const LiminalApp = () => {
         </div>
       )}
 
+      {/* Fullscreen Player */}
+      {isFullscreen && (
+        <FullscreenPlayer
+          currentSound={currentSound}
+          isPlaying={isPlaying}
+          onTogglePlay={handleTogglePlay}
+          volume={volume}
+          onVolumeChange={setVolume}
+          duration={duration}
+          onDurationChange={setDuration}
+          onPreviousSound={handlePreviousSound}
+          onNextSound={handleNextSound}
+          onClose={() => setIsFullscreen(false)}
+        />
+      )}
+
       {/* Footer */}
       <footer className="bg-black/20 backdrop-blur-sm border-t border-white/10 mt-20">
         <div className="max-w-7xl mx-auto px-6 py-12">
@@ -1033,6 +1233,18 @@ const LiminalApp = () => {
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
           50% { transform: translateY(-10px); }
+        }
+
+        @keyframes gradientShift {
+          0%, 100% { transform: rotate(0deg) scale(1); }
+          25% { transform: rotate(90deg) scale(1.1); }
+          50% { transform: rotate(180deg) scale(1); }
+          75% { transform: rotate(270deg) scale(1.1); }
+        }
+
+        @keyframes waveformPulse {
+          0%, 100% { transform: scaleY(1); }
+          50% { transform: scaleY(1.5); }
         }
       `}</style>
     </div>
