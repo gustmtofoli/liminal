@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, RotateCcw, Volume2, Timer, Shuffle, Grid, List, SkipBack, SkipForward, Search, X, ChevronLeft, ChevronRight, Maximize2, ArrowLeft } from 'lucide-react';
+import { Play, Pause, RotateCcw, Volume2, Timer, Shuffle, Grid, List, SkipBack, SkipForward, Search, X, ChevronLeft, ChevronRight, Maximize2, ArrowLeft, EyeOff, Eye } from 'lucide-react';
 
 // Componente de Card para cada ambiente sonoro (Grid View)
 const SoundCardGrid = ({ sound, isActive, onSelect, isPlaying }) => (
@@ -353,6 +353,11 @@ const AudioPlayer = ({
 // Componente de visualização em tela cheia
 const FullscreenPlayer = ({ currentSound, isPlaying, onTogglePlay, volume, onVolumeChange, duration, onDurationChange, onPreviousSound, onNextSound, onClose }) => {
   const [particles, setParticles] = useState([]);
+  const [showAds, setShowAds] = useState(false);
+  const [fullscreenStartTime, setFullscreenStartTime] = useState(null);
+  const [showPlayer, setShowPlayer] = useState(true);
+  const [showTopButtons, setShowTopButtons] = useState(true);
+  const [inactivityTimer, setInactivityTimer] = useState(null);
   
   // Configurações temáticas para cada ambiente sonoro
   const getThemeConfig = (soundId) => {
@@ -409,6 +414,88 @@ const FullscreenPlayer = ({ currentSound, isPlaying, onTogglePlay, volume, onVol
     
     return themes[soundId] || themes[1];
   };
+
+  // Controle de inatividade para esconder botões superiores
+  const resetInactivityTimer = () => {
+    setShowTopButtons(true);
+    
+    if (inactivityTimer) {
+      clearTimeout(inactivityTimer);
+    }
+
+    // Só esconder botões se o player estiver oculto
+    if (!showPlayer) {
+      const timer = setTimeout(() => {
+        setShowTopButtons(false);
+      }, 10000); // 10 segundos
+      
+      setInactivityTimer(timer);
+    }
+  };
+
+  // Controle de anúncios no fullscreen
+  useEffect(() => {
+    // Definir tempo de início quando entrar no fullscreen
+    setFullscreenStartTime(Date.now());
+    setShowAds(false);
+
+    // Configurar timer para alternar anúncios a cada 10 minutos
+    const adTimer = setInterval(() => {
+      const elapsed = Date.now() - fullscreenStartTime;
+      const tenMinutes = 10 * 60 * 1000; // 10 minutos em ms
+      
+      if (elapsed >= tenMinutes) {
+        // Após os primeiros 10 minutos, alternar entre mostrar e esconder
+        const cycles = Math.floor(elapsed / tenMinutes);
+        setShowAds(cycles % 2 === 1); // Impar = mostrar, Par = esconder
+      }
+    }, 1000); // Verificar a cada segundo
+
+    return () => clearInterval(adTimer);
+  }, []);
+
+  // Gerenciar timer de inatividade baseado no estado do player
+  useEffect(() => {
+    if (showPlayer) {
+      // Se o player está visível, sempre mostrar botões e limpar timer
+      setShowTopButtons(true);
+      if (inactivityTimer) {
+        clearTimeout(inactivityTimer);
+        setInactivityTimer(null);
+      }
+    } else {
+      // Se o player está oculto, iniciar timer de inatividade
+      resetInactivityTimer();
+    }
+
+    return () => {
+      if (inactivityTimer) {
+        clearTimeout(inactivityTimer);
+      }
+    };
+  }, [showPlayer]);
+
+  // Event listeners para detectar atividade do usuário
+  useEffect(() => {
+    const handleUserActivity = () => {
+      if (!showPlayer) {
+        resetInactivityTimer();
+      }
+    };
+
+    // Eventos que indicam atividade do usuário
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    
+    events.forEach(event => {
+      document.addEventListener(event, handleUserActivity, true);
+    });
+
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, handleUserActivity, true);
+      });
+    };
+  }, [showPlayer, inactivityTimer]);
 
   // Gerar partículas temáticas
   useEffect(() => {
@@ -582,17 +669,31 @@ const FullscreenPlayer = ({ currentSound, isPlaying, onTogglePlay, volume, onVol
         
       </div>
 
-      {/* Close Button */}
-      <button
-        onClick={onClose}
-        className="absolute top-6 right-6 z-10 p-3 bg-black/50 hover:bg-black/70 rounded-full transition-all duration-300"
-      >
-        <X className="w-6 h-6 text-white" />
-      </button>
+      {/* Top Controls */}
+      <div className={`absolute top-6 right-6 z-10 flex gap-3 transition-all duration-500 ${
+        showTopButtons ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'
+      }`}>
+        {/* Hide/Show Player Button */}
+        <button
+          onClick={() => setShowPlayer(!showPlayer)}
+          className="p-3 bg-black/50 hover:bg-black/70 rounded-full transition-all duration-300"
+          title={showPlayer ? "Ocultar controles" : "Mostrar controles"}
+        >
+          {showPlayer ? <EyeOff className="w-6 h-6 text-white" /> : <Eye className="w-6 h-6 text-white" />}
+        </button>
+        
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="p-3 bg-black/50 hover:bg-black/70 rounded-full transition-all duration-300"
+        >
+          <X className="w-6 h-6 text-white" />
+        </button>
+      </div>
 
       {/* Player Content */}
-      <div className="relative z-10 max-w-2xl mx-auto text-center px-8 -mt-16">
-        {/* Sound Icon */}
+      <div className="relative z-10 max-w-2xl mx-auto text-center px-8 -mt-16 transition-all duration-500">
+        {/* Sound Icon - Always visible */}
         <div 
           className={`w-32 h-32 mx-auto mb-6 rounded-full bg-gradient-to-br ${currentSound?.gradient || 'from-purple-600 to-blue-600'} flex items-center justify-center text-6xl shadow-2xl`}
           style={{
@@ -602,69 +703,76 @@ const FullscreenPlayer = ({ currentSound, isPlaying, onTogglePlay, volume, onVol
           {currentSound?.icon || '🎵'}
         </div>
 
-        {/* Sound Info */}
-        <h1 className="text-white text-4xl font-bold mb-3">{currentSound?.name || 'Ambiente Sonoro'}</h1>
-        <p className="text-white/70 text-xl mb-10">{currentSound?.description || 'Relaxe e aproveite'}</p>
+        {/* Controls and Info - Only show when showPlayer is true */}
+        {showPlayer && (
+          <>
+            {/* Sound Info */}
+            <h1 className="text-white text-4xl font-bold mb-3">{currentSound?.name || 'Ambiente Sonoro'}</h1>
+            <p className="text-white/70 text-xl mb-10">{currentSound?.description || 'Relaxe e aproveite'}</p>
 
-        {/* Controls */}
-        <div className="flex items-center justify-center gap-6 mb-10">
-          <button 
-            onClick={onPreviousSound}
-            className="p-4 rounded-full bg-white/20 hover:bg-white/30 transition-all duration-300 transform hover:scale-110"
-          >
-            <SkipBack className="text-white w-8 h-8" />
-          </button>
+            {/* Controls */}
+            <div className="flex items-center justify-center gap-6 mb-10">
+              <button 
+                onClick={onPreviousSound}
+                className="p-4 rounded-full bg-white/20 hover:bg-white/30 transition-all duration-300 transform hover:scale-110"
+              >
+                <SkipBack className="text-white w-8 h-8" />
+              </button>
 
-          <button 
-            onClick={onTogglePlay}
-            className="p-6 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-110 shadow-2xl"
-          >
-            {isPlaying ? 
-              <Pause className="text-white w-12 h-12" /> : 
-              <Play className="text-white ml-1 w-12 h-12" />
-            }
-          </button>
+              <button 
+                onClick={onTogglePlay}
+                className="p-6 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transition-all duration-300 transform hover:scale-110 shadow-2xl"
+              >
+                {isPlaying ? 
+                  <Pause className="text-white w-12 h-12" /> : 
+                  <Play className="text-white ml-1 w-12 h-12" />
+                }
+              </button>
 
-          <button 
-            onClick={onNextSound}
-            className="p-4 rounded-full bg-white/20 hover:bg-white/30 transition-all duration-300 transform hover:scale-110"
-          >
-            <SkipForward className="text-white w-8 h-8" />
-          </button>
-        </div>
+              <button 
+                onClick={onNextSound}
+                className="p-4 rounded-full bg-white/20 hover:bg-white/30 transition-all duration-300 transform hover:scale-110"
+              >
+                <SkipForward className="text-white w-8 h-8" />
+              </button>
+            </div>
 
-        {/* Volume Control */}
-        <div className="flex items-center gap-4 max-w-md mx-auto">
-          <Volume2 className="w-6 h-6 text-white/70" />
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={volume}
-            onChange={(e) => onVolumeChange(e.target.value)}
-            className="flex-1 h-2 bg-white/20 rounded-lg appearance-none cursor-pointer slider"
-          />
-          <span className="text-white/70 text-sm w-12">{volume}%</span>
-        </div>
+            {/* Volume Control */}
+            <div className="flex items-center gap-4 max-w-md mx-auto">
+              <Volume2 className="w-6 h-6 text-white/70" />
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={volume}
+                onChange={(e) => onVolumeChange(e.target.value)}
+                className="flex-1 h-2 bg-white/20 rounded-lg appearance-none cursor-pointer slider"
+              />
+              <span className="text-white/70 text-sm w-12">{volume}%</span>
+            </div>
+          </>
+        )}
       </div>
 
-      {/* Ads Area - Bottom of Fullscreen */}
-      <div className="absolute bottom-6 left-6 right-6 z-10">
-        <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 text-center max-w-6xl mx-auto">
-          <div className="text-white/40 text-xs mb-4">PUBLICIDADE</div>
-          <div className="flex justify-center gap-4">
-            <div className="bg-white/10 rounded-lg h-24 w-80 flex items-center justify-center">
-              <span className="text-white/60 text-sm">Banner 728x90</span>
-            </div>
-            <div className="bg-white/10 rounded-lg h-24 w-80 flex items-center justify-center">
-              <span className="text-white/60 text-sm">Banner 728x90</span>
-            </div>
-            <div className="bg-white/10 rounded-lg h-24 w-80 flex items-center justify-center">
-              <span className="text-white/60 text-sm">Banner 728x90</span>
+      {/* Ads Area - Bottom of Fullscreen (Only show based on timer) */}
+      {showAds && (
+        <div className="absolute bottom-6 left-6 right-6 z-10">
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6 text-center max-w-6xl mx-auto">
+            <div className="text-white/40 text-xs mb-4">PUBLICIDADE</div>
+            <div className="flex justify-center gap-4">
+              <div className="bg-white/10 rounded-lg h-24 w-80 flex items-center justify-center">
+                <span className="text-white/60 text-sm">Banner 728x90</span>
+              </div>
+              <div className="bg-white/10 rounded-lg h-24 w-80 flex items-center justify-center">
+                <span className="text-white/60 text-sm">Banner 728x90</span>
+              </div>
+              <div className="bg-white/10 rounded-lg h-24 w-80 flex items-center justify-center">
+                <span className="text-white/60 text-sm">Banner 728x90</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
