@@ -6,7 +6,7 @@ const SoundCardGrid = ({ sound, isActive, onSelect, isPlaying }) => (
   <div 
     onClick={() => onSelect(sound)}
     className={`
-      group relative overflow-hidden rounded-2xl cursor-pointer transition-all duration-500 transform hover:scale-[1.02]
+      group relative overflow-hidden rounded-2xl cursor-pointer transition-all duration-500 mx-1
       ${isActive ? 'ring-3 ring-blue-400 shadow-2xl shadow-blue-500/25' : 'hover:shadow-xl hover:shadow-black/20'}
       bg-gradient-to-br ${sound.gradient} aspect-square flex flex-col justify-between p-4 sm:p-5 lg:p-6
       before:absolute before:inset-0 before:bg-gradient-to-t before:from-black/30 before:to-transparent before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-300
@@ -14,7 +14,7 @@ const SoundCardGrid = ({ sound, isActive, onSelect, isPlaying }) => (
     `}
   >
     <div className="relative z-10 flex justify-between items-start">
-      <div className="text-white/60 text-2xl sm:text-3xl lg:text-4xl group-hover:scale-105 transition-transform duration-300">
+      <div className="text-white/60 text-2xl sm:text-3xl lg:text-4xl transition-transform duration-300">
         {sound.icon}
       </div>
       {isActive && (
@@ -41,12 +41,12 @@ const SoundCardList = ({ sound, isActive, onSelect, isPlaying }) => (
   <div 
     onClick={() => onSelect(sound)}
     className={`
-      group relative overflow-hidden rounded-xl cursor-pointer transition-all duration-300 transform hover:scale-[1.02]
+      group relative overflow-hidden rounded-xl cursor-pointer transition-all duration-300 mx-1
       ${isActive ? 'ring-2 ring-blue-400 shadow-lg shadow-blue-500/25 bg-white/10' : 'bg-white/5 hover:bg-white/10'}
       backdrop-blur-sm border border-white/10 hover:border-white/20 p-4 sm:p-5 lg:p-6 flex items-center gap-4 sm:gap-5 lg:gap-6
     `}
   >
-    <div className={`w-14 h-14 sm:w-16 sm:h-16 lg:w-18 lg:h-18 rounded-xl bg-gradient-to-br ${sound.gradient} flex items-center justify-center text-xl sm:text-2xl lg:text-3xl transition-transform duration-300 group-hover:scale-110`}>
+    <div className={`w-14 h-14 sm:w-16 sm:h-16 lg:w-18 lg:h-18 rounded-xl bg-gradient-to-br ${sound.gradient} flex items-center justify-center text-xl sm:text-2xl lg:text-3xl transition-transform duration-300`}>
       {sound.icon}
     </div>
     
@@ -1117,10 +1117,10 @@ const LiminalApp = () => {
                 </div>
               </div>
 
-              <div className="overflow-y-auto overflow-x-hidden max-h-[70vh] pr-2 scrollbar-hide pt-2">
+              <div className="overflow-y-auto overflow-x-hidden max-h-[70vh] pr-2 scrollbar-hide pt-2 px-2">
                 {viewMode === 'grid' ? (
                   <div className={`
-                    transition-all duration-500 grid gap-6 lg:gap-8
+                    transition-all duration-500 grid gap-4 lg:gap-6
                     ${isLargeScreen 
                       ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
                       : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'
@@ -1137,7 +1137,7 @@ const LiminalApp = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="space-y-4 max-w-4xl mx-auto">
+                  <div className="space-y-3 max-w-4xl mx-auto">
                     {filteredSounds.map((sound) => (
                       <SoundCardList
                         key={sound.id}
