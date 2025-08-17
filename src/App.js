@@ -353,105 +353,233 @@ const AudioPlayer = ({
 // Componente de visualização em tela cheia
 const FullscreenPlayer = ({ currentSound, isPlaying, onTogglePlay, volume, onVolumeChange, duration, onDurationChange, onPreviousSound, onNextSound, onClose }) => {
   const [particles, setParticles] = useState([]);
-  const [waveform, setWaveform] = useState([]);
   
-  // Gerar partículas aleatórias
+  // Configurações temáticas para cada ambiente sonoro
+  const getThemeConfig = (soundId) => {
+    const themes = {
+      1: { // Chuva Suave
+        particleCount: 80,
+        particleSpeed: { x: [-0.5, 0.5], y: [1, 3] },
+        particleSize: [1, 3],
+        colors: ['#87CEEB', '#4682B4', '#6495ED', '#B0E0E6']
+      },
+      2: { // Floresta Tropical
+        particleCount: 60,
+        particleSpeed: { x: [-1, 1], y: [-0.5, 0.5] },
+        particleSize: [2, 5],
+        colors: ['#228B22', '#32CD32', '#90EE90', '#98FB98']
+      },
+      3: { // Oceano Calmo
+        particleCount: 40,
+        particleSpeed: { x: [-0.3, 0.3], y: [-0.8, 0.8] },
+        particleSize: [3, 8],
+        colors: ['#008B8B', '#20B2AA', '#48D1CC', '#AFEEEE']
+      },
+      4: { // Fogueira Noturna
+        particleCount: 100,
+        particleSpeed: { x: [-0.5, 0.5], y: [-2, -0.5] },
+        particleSize: [1, 4],
+        colors: ['#FF4500', '#FF6347', '#FFD700', '#FFA500']
+      },
+      5: { // Vento Suave
+        particleCount: 70,
+        particleSpeed: { x: [2, 4], y: [-0.5, 0.5] },
+        particleSize: [1, 3],
+        colors: ['#F0F8FF', '#E6E6FA', '#D3D3D3', '#C0C0C0']
+      },
+      6: { // Frequência 432Hz
+        particleCount: 50,
+        particleSpeed: { x: [-1, 1], y: [-1, 1] },
+        particleSize: [2, 6],
+        colors: ['#9400D3', '#8A2BE2', '#BA55D3', '#DDA0DD']
+      },
+      7: { // Café Urbano
+        particleCount: 30,
+        particleSpeed: { x: [-0.8, 0.8], y: [0.5, 1.5] },
+        particleSize: [2, 4],
+        colors: ['#8B4513', '#A0522D', '#CD853F', '#DEB887']
+      },
+      8: { // Tempestade Distante
+        particleCount: 90,
+        particleSpeed: { x: [-2, 2], y: [-1, 1] },
+        particleSize: [1, 5],
+        colors: ['#2F4F4F', '#708090', '#778899', '#B0C4DE']
+      }
+    };
+    
+    return themes[soundId] || themes[1];
+  };
+
+  // Gerar partículas temáticas
   useEffect(() => {
+    if (!currentSound) return;
+    
+    const theme = getThemeConfig(currentSound.id);
     const generateParticles = () => {
-      return Array.from({ length: 50 }, (_, i) => ({
+      return Array.from({ length: theme.particleCount }, (_, i) => ({
         id: i,
         x: Math.random() * window.innerWidth,
         y: Math.random() * window.innerHeight,
-        size: Math.random() * 4 + 1,
-        speedX: (Math.random() - 0.5) * 2,
-        speedY: (Math.random() - 0.5) * 2,
-        color: `hsl(${Math.random() * 360}, 70%, 60%)`,
-        opacity: Math.random() * 0.8 + 0.2
+        size: Math.random() * (theme.particleSize[1] - theme.particleSize[0]) + theme.particleSize[0],
+        speedX: Math.random() * (theme.particleSpeed.x[1] - theme.particleSpeed.x[0]) + theme.particleSpeed.x[0],
+        speedY: Math.random() * (theme.particleSpeed.y[1] - theme.particleSpeed.y[0]) + theme.particleSpeed.y[0],
+        color: theme.colors[Math.floor(Math.random() * theme.colors.length)],
+        opacity: Math.random() * 0.8 + 0.2,
+        theme: currentSound.id
       }));
     };
     
     setParticles(generateParticles());
-  }, []);
+  }, [currentSound]);
 
-  // Gerar waveform dinâmica
-  useEffect(() => {
-    const generateWaveform = () => {
-      return Array.from({ length: 64 }, () => Math.random() * 100 + 10);
-    };
-    
-    let interval;
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setWaveform(generateWaveform());
-      }, 100);
-    }
-    
-    return () => clearInterval(interval);
-  }, [isPlaying]);
 
-  // Animar partículas
+  // Animar partículas temáticas
   useEffect(() => {
     let animationFrame;
     
     const animateParticles = () => {
-      setParticles(prev => prev.map(particle => ({
-        ...particle,
-        x: (particle.x + particle.speedX + window.innerWidth) % window.innerWidth,
-        y: (particle.y + particle.speedY + window.innerHeight) % window.innerHeight,
-        opacity: isPlaying ? Math.sin(Date.now() * 0.001 + particle.id) * 0.3 + 0.5 : 0.2
-      })));
+      setParticles(prev => prev.map(particle => {
+        let newX = particle.x + particle.speedX;
+        let newY = particle.y + particle.speedY;
+        let newOpacity = particle.opacity;
+
+        // Comportamentos específicos por tema
+        if (currentSound) {
+          switch (currentSound.id) {
+            case 1: // Chuva - cai de cima para baixo
+              if (newY > window.innerHeight) newY = -particle.size;
+              break;
+            case 3: // Oceano - movimento fluido
+              newOpacity = isPlaying ? Math.sin(Date.now() * 0.002 + particle.id) * 0.4 + 0.6 : 0.3;
+              break;
+            case 4: // Fogueira - sobe e desaparece
+              if (newY < -particle.size) newY = window.innerHeight + particle.size;
+              newOpacity = isPlaying ? Math.sin(Date.now() * 0.003 + particle.id) * 0.5 + 0.5 : 0.2;
+              break;
+            case 5: // Vento - movimento horizontal
+              if (newX > window.innerWidth) newX = -particle.size;
+              break;
+            case 7: // Café - vapor subindo
+              if (newY < -particle.size) newY = window.innerHeight + particle.size;
+              break;
+            default:
+              // Movimento circular padrão
+              newX = (newX + window.innerWidth) % window.innerWidth;
+              newY = (newY + window.innerHeight) % window.innerHeight;
+          }
+        }
+
+        return {
+          ...particle,
+          x: newX,
+          y: newY,
+          opacity: isPlaying ? newOpacity : 0.2
+        };
+      }));
       
       animationFrame = requestAnimationFrame(animateParticles);
     };
     
     animateParticles();
     return () => cancelAnimationFrame(animationFrame);
-  }, [isPlaying]);
+  }, [isPlaying, currentSound]);
 
   return (
     <div className="fixed inset-0 bg-black z-[100] flex items-center justify-center">
       {/* Animated Background */}
       <div className="absolute inset-0 overflow-hidden">
-        {/* Gradient Background */}
+        {/* Static Gradient Background */}
         <div 
           className={`absolute inset-0 bg-gradient-to-br ${currentSound?.gradient || 'from-purple-900 to-blue-900'} opacity-30`}
-          style={{
-            animation: isPlaying ? 'gradientShift 10s ease-in-out infinite' : 'none'
-          }}
         />
         
-        {/* Floating Particles */}
-        {particles.map(particle => (
-          <div
-            key={particle.id}
-            className="absolute rounded-full"
-            style={{
-              left: `${particle.x}px`,
-              top: `${particle.y}px`,
-              width: `${particle.size}px`,
-              height: `${particle.size}px`,
-              backgroundColor: particle.color,
-              opacity: particle.opacity,
-              filter: 'blur(1px)',
-              transition: 'opacity 0.3s ease'
-            }}
-          />
-        ))}
-        
-        {/* Waveform Visualization */}
-        <div className="absolute bottom-0 left-0 right-0 flex items-end justify-center h-32 opacity-30">
-          {waveform.map((height, index) => (
+        {/* Themed Particles */}
+        {particles.map(particle => {
+          let particleStyle = {
+            left: `${particle.x}px`,
+            top: `${particle.y}px`,
+            width: `${particle.size}px`,
+            height: `${particle.size}px`,
+            backgroundColor: particle.color,
+            opacity: particle.opacity,
+            transition: 'opacity 0.3s ease'
+          };
+
+          // Efeitos específicos por tema
+          if (currentSound) {
+            switch (currentSound.id) {
+              case 1: // Chuva - formato de gota
+                particleStyle = {
+                  ...particleStyle,
+                  borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%',
+                  filter: 'blur(0.5px)',
+                  boxShadow: `0 0 ${particle.size}px ${particle.color}`
+                };
+                break;
+              case 3: // Oceano - efeito líquido
+                particleStyle = {
+                  ...particleStyle,
+                  borderRadius: '50%',
+                  filter: 'blur(2px)',
+                  boxShadow: `0 0 ${particle.size * 2}px ${particle.color}30`
+                };
+                break;
+              case 4: // Fogueira - efeito de chama
+                particleStyle = {
+                  ...particleStyle,
+                  borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%',
+                  filter: 'blur(1px)',
+                  boxShadow: `0 0 ${particle.size * 3}px ${particle.color}`,
+                  background: `radial-gradient(circle, ${particle.color}, transparent)`
+                };
+                break;
+              case 5: // Vento - efeito etéreo
+                particleStyle = {
+                  ...particleStyle,
+                  borderRadius: '50%',
+                  filter: 'blur(3px)',
+                  background: `linear-gradient(45deg, ${particle.color}, transparent)`
+                };
+                break;
+              case 6: // Frequência - efeito de energia
+                particleStyle = {
+                  ...particleStyle,
+                  borderRadius: '50%',
+                  filter: 'blur(1px)',
+                  boxShadow: `0 0 ${particle.size * 2}px ${particle.color}, inset 0 0 ${particle.size}px ${particle.color}`
+                };
+                break;
+              case 7: // Café - efeito de vapor
+                particleStyle = {
+                  ...particleStyle,
+                  borderRadius: '50%',
+                  filter: 'blur(2px)',
+                  background: `radial-gradient(circle, ${particle.color}80, transparent)`
+                };
+                break;
+              case 8: // Tempestade - efeito elétrico
+                particleStyle = {
+                  ...particleStyle,
+                  borderRadius: '50%',
+                  filter: 'blur(1px)',
+                  boxShadow: `0 0 ${particle.size}px ${particle.color}, 0 0 ${particle.size * 2}px ${particle.color}50`
+                };
+                break;
+              default:
+                particleStyle.borderRadius = '50%';
+                particleStyle.filter = 'blur(1px)';
+            }
+          }
+
+          return (
             <div
-              key={index}
-              className="bg-white mx-1 rounded-t"
-              style={{
-                height: `${height}%`,
-                width: '8px',
-                animation: isPlaying ? `waveformPulse 0.5s ease-in-out infinite ${index * 0.05}s` : 'none'
-              }}
+              key={particle.id}
+              className="absolute"
+              style={particleStyle}
             />
-          ))}
-        </div>
+          );
+        })}
+        
       </div>
 
       {/* Close Button */}
@@ -1235,17 +1363,6 @@ const LiminalApp = () => {
           50% { transform: translateY(-10px); }
         }
 
-        @keyframes gradientShift {
-          0%, 100% { transform: rotate(0deg) scale(1); }
-          25% { transform: rotate(90deg) scale(1.1); }
-          50% { transform: rotate(180deg) scale(1); }
-          75% { transform: rotate(270deg) scale(1.1); }
-        }
-
-        @keyframes waveformPulse {
-          0%, 100% { transform: scaleY(1); }
-          50% { transform: scaleY(1.5); }
-        }
       `}</style>
     </div>
   );
